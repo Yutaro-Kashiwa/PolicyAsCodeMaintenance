@@ -74,7 +74,8 @@ def analyze(cloned_path):
             break
 debug_mode = False
 if __name__ == "__main__":
-    cloned_path = '../repos/'
-    repo_list = load_repository_list('../inputs/repos.csv')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    cloned_path = os.path.join(script_dir, '../repos/')
+    repo_list = load_repository_list(os.path.join(script_dir, '../inputs/repos.csv'))
     clone_repositories_from_list(repo_list)
     analyze(cloned_path)
