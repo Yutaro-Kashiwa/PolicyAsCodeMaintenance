@@ -29,34 +29,34 @@ def get_commit_changes(repo_path):
 
 def clone_repository(repo_name, cloned_path):
     """
-    単一のリポジトリをクローンする
+    Clone a single repository
 
     Args:
-        repo_name (str): リポジトリ名（例: 'microsoft/vscode'）
-        cloned_path (str): クローン先のディレクトリパス
+        repo_name (str): Repository name (e.g., 'microsoft/vscode')
+        cloned_path (str): Path to the directory where the repository will be cloned
 
     Returns:
-        bool: クローンが成功した場合True、失敗した場合False
+        bool: True if cloning succeeds, False if it fails
     """
     try:
-        # クローン先ディレクトリを作成（存在しない場合）
+        # Create clone destination directory (if it doesn't exist)
         Path(cloned_path).mkdir(parents=True, exist_ok=True)
 
-        # GitHubのURLを構築
+        # Build GitHub URL
         github_url = f"https://github.com/{repo_name}.git"
 
-        # リポジトリ名からローカルディレクトリ名を取得
+        # Get local directory name from repository name
         local_repo_name = repo_name.split('/')[-1]
         local_path = os.path.join(cloned_path, local_repo_name)
 
-        # 既にクローン済みかチェック
+        # Check if already cloned
         if os.path.exists(local_path):
             print(f"Repository '{repo_name}' already exists at {local_path}, skipping...")
             return True
 
         print(f"Cloning {repo_name} to {local_path}...")
 
-        # pygit2を使ってクローン
+        # Clone using pygit2
         repo = pygit2.clone_repository(github_url, local_path)
 
         print(f"Successfully cloned {repo_name}")
@@ -68,5 +68,3 @@ def clone_repository(repo_name, cloned_path):
     except Exception as e:
         print(f"Error cloning {repo_name}: {str(e)}")
         return False
-
-

@@ -6,28 +6,28 @@ from pathlib import Path
 
 def load_repository_list(csv_path='repos.csv'):
     """
-    CSVファイルからリポジトリ情報を読み込み、リストとして返す
+    Load repository information from CSV file and return as a list
 
     Args:
-        csv_path (str): CSVファイルのパス（デフォルト: 'repos.csv'）
+        csv_path (str): Path to CSV file (default: 'repos.csv')
 
     Returns:
-        list: リポジトリ情報の辞書リスト
+        list: List of dictionaries containing repository information
               [{'repo_name': 'user/repo', 'sha': 'XXXX'}, ...]
-              エラーの場合はNone
+              Returns None in case of error
     """
     try:
-        # CSVファイルを読み込み
+        # Load CSV file
         df = pd.read_csv(csv_path)
 
-        # 必要な列が存在するかチェック
+        # Check if required columns exist
         required_columns = ['repo_name']#'sha'
         for col in required_columns:
             if col not in df.columns:
                 print(f"Error: Column '{col}' not found in CSV file")
                 return None
 
-        # 辞書のリストに変換
+        # Convert to list of dictionaries
         repo_list = []
         for index, row in df.iterrows():
             repo_info = {
