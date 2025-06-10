@@ -13,7 +13,7 @@ def load_repository_list(csv_path='repos.csv'):
 
     Returns:
         list: List of dictionaries containing repository information
-              [{'repo_name': 'user/repo', 'sha': 'XXXX'}, ...]
+              [{'full_name': 'user/repo', 'sha': 'XXXX'}, ...]
               Returns None in case of error
     """
     try:
@@ -21,7 +21,7 @@ def load_repository_list(csv_path='repos.csv'):
         df = pd.read_csv(csv_path)
 
         # Check if required columns exist
-        required_columns = ['repo_name']#'sha'
+        required_columns = ['full_name']#'sha'
         for col in required_columns:
             if col not in df.columns:
                 print(f"Error: Column '{col}' not found in CSV file")
@@ -31,7 +31,8 @@ def load_repository_list(csv_path='repos.csv'):
         repo_list = []
         for index, row in df.iterrows():
             repo_info = {
-                'repo_name': row['repo_name'],
+                'full_name': row['full_name'],
+                'id': row['id'],
                 # 'sha': row['sha']
             }
             repo_list.append(repo_info)
