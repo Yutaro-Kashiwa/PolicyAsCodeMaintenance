@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 
-def load_repository_list(csv_path='repos.csv'):
+def load_repository_list(csv_path='repos.csv', target_no = None):
     """
     Load repository information from CSV file and return as a list
 
@@ -29,7 +29,13 @@ def load_repository_list(csv_path='repos.csv'):
 
         # Convert to list of dictionaries
         repo_list = []
+        i = 0
         for index, row in df.iterrows():
+            i+=1
+            if not target_no is None:
+                if not i == target_no:
+                    print("SKIPPING: ", row['full_name'])
+                    continue
             repo_info = {
                 'full_name': row['full_name'],
                 'id': row['id'],

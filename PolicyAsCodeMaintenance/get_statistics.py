@@ -12,12 +12,10 @@ REPOS_DIR = os.path.join(ROOT_DIR, 'repos')
 INPUTS_DIR = os.path.join(ROOT_DIR, 'inputs')
 # repos-full-test.csv contains only 1 repository for testing purposes
 # Comment this line and uncomment the line below to use the full dataset
-REPOS_CSV_PATH = os.path.join(INPUTS_DIR, 'repos-full-test.csv')
+REPOS_CSV_PATH = os.path.join(INPUTS_DIR, 'repos-full.csv')
 #REPOS_CSV_PATH = os.path.join(INPUTS_DIR, 'repos-full.csv')
 FILES_CSV_PATH = os.path.join(INPUTS_DIR, 'pac_files.csv')
 
-# Debug mode flag
-DEBUG_MODE = True
 
 def is_pac(repo_id, file):
     df = pd.read_csv(FILES_CSV_PATH)
@@ -90,10 +88,17 @@ def analyze(repo_list, cloned_path):
         changes = get_commit_changes(repo_path)
         num_pac_changes = count_commits_changing_pac(repo_id, changes)
         print(repo_name, num_pac_changes, len(changes), num_pac_changes/len(changes))
-        if (DEBUG_MODE):
-            break
+
+
+
 
 if __name__ == "__main__":
-    repo_list = load_repository_list(REPOS_CSV_PATH)
+    import argparse
+    # Receive cluster number (if none, run all.)
+    parser = argparse.ArgumentParser(description='to collect maintenance activities from repositories that have policy as code')
+    parser.add_argument('--repository_no', type=int, help='') # starts from 1
+    args = parser.parse_args()
+    repo_list = load_repository_list(REPOS_CSV_PATH, args.repository_no)
+    print(f"Repository list: {repo_list}")
     clone_repositories_from_list(repo_list)
     analyze(repo_list, REPOS_DIR)
