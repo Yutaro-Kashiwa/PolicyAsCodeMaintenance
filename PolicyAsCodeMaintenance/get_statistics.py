@@ -63,9 +63,6 @@ def clone_repositories_from_list(repo_list):
             success_count += 1
         else:
             failed_count += 1
-        if (DEBUG_MODE):
-            break
-
     print(f"\nCloning completed: {success_count} successful, {failed_count} failed")
     return {'success': success_count, 'failed': failed_count}
 
