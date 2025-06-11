@@ -91,7 +91,7 @@ def analyze(repo_list, cloned_path):
 
 
 
-
+# To debug (analyze one repository), use the argument "--repository_no=10"
 if __name__ == "__main__":
     import argparse
     # Receive cluster number (if none, run all.)
