@@ -9,20 +9,70 @@ def get_commit_changes(repo_path):
 
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL):
         commit_id = str(commit.id)
-        changed_files = []
+        commit_info = {
+            'files': [],
+            'author': commit.author.name,
+            'author_email': commit.author.email,
+            'message': commit.message,
+            'date': commit.commit_time,
+            'changes': []  # List of file changes with additions/deletions
+        }
 
         if commit.parents:
             parent = commit.parents[0]
-            diff = repo.diff(parent, commit)
+            diff = repo.diff(parent.tree, commit.tree)
+            
+            # Enable line-by-line diff statistics
+            diff.find_similar()
+            
             for patch in diff:
-                changed_files.append(patch.delta.new_file.path)
+                file_path = patch.delta.new_file.path
+                commit_info['files'].append(file_path)
+                
+                # Get line statistics for this file
+                additions = patch.line_stats[1]  # Number of additions
+                deletions = patch.line_stats[2]  # Number of deletions
+                
+                commit_info['changes'].append({
+                    'file': file_path,
+                    'additions': additions,
+                    'deletions': deletions,
+                    'total_changes': additions + deletions
+                })
         else:
             # Initial commit (no parents)
             tree = commit.tree
-            for entry in tree:
-                changed_files.append(entry.name)
+            # For initial commit, we'll need to walk the tree recursively
+            def walk_tree(tree_obj, prefix=''):
+                for entry in tree_obj:
+                    if entry.type == 'tree':
+                        subtree = repo[entry.id]
+                        walk_tree(subtree, prefix + entry.name + '/')
+                    else:
+                        full_path = prefix + entry.name
+                        commit_info['files'].append(full_path)
+                        # For initial commit, all lines are additions
+                        try:
+                            blob = repo[entry.id]
+                            if hasattr(blob, 'is_binary') and blob.is_binary:
+                                lines = 0
+                            elif hasattr(blob, 'data'):
+                                lines = blob.data.decode('utf-8', errors='ignore').count('\n')
+                            else:
+                                lines = 0
+                        except (UnicodeDecodeError, AttributeError):
+                            lines = 0
+                        
+                        commit_info['changes'].append({
+                            'file': full_path,
+                            'additions': lines,
+                            'deletions': 0,
+                            'total_changes': lines
+                        })
+            
+            walk_tree(tree)
 
-        commit_changes[commit_id] = changed_files
+        commit_changes[commit_id] = commit_info
 
     return commit_changes
 
@@ -57,7 +107,7 @@ def clone_repository(repo_name, cloned_path):
         print(f"Cloning {repo_name} to {local_path}...")
 
         # Clone using pygit2
-        repo = pygit2.clone_repository(github_url, local_path)
+        pygit2.clone_repository(github_url, local_path)
 
         print(f"Successfully cloned {repo_name}")
         return True

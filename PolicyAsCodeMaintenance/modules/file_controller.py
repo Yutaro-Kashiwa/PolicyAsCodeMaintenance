@@ -39,7 +39,7 @@ def load_repository_list(csv_path='repos.csv', target_no = None):
             repo_info = {
                 'full_name': row['full_name'],
                 'id': row['id'],
-                # 'sha': row['sha']
+                'sha': row['last_commit_sha']
             }
             repo_list.append(repo_info)
 
