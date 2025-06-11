@@ -135,10 +135,10 @@ class PacAnalyzer:
             repo_id: Repository ID
             repo_name: Repository name (e.g., 'aws-cdk')
             commit_changes: Dictionary mapping commit IDs to commit info dictionaries
-            project_name: Full project name including owner (e.g., 'aws/aws-cdk')
+            project_name: Full project name including owner (e.g., 'aws/aws-cdk') - will be parsed to extract only owner
             
         Returns:
-            Dictionary with analysis results
+            Dictionary with analysis results (project_name field will contain only owner)
         """
         total_commits = len(commit_changes)
         
@@ -160,10 +160,16 @@ class PacAnalyzer:
                 pac_added_lines += pac_file.get('additions', 0)
                 pac_deleted_lines += pac_file.get('deletions', 0)
         
+        # Extract owner from project_name (e.g., 'aws' from 'aws/aws-cdk')
+        owner = None
+        if project_name and '/' in project_name:
+            owner = project_name.split('/')[0]
+        
         results = {
             'repository_id': repo_id,
+            'project_name': project_name,  # Use only the owner part
             'repository_name': repo_name,
-            'project_name': project_name,  # Use project_name if provided, else fall back to repo_name
+            'owner_name': owner,  # Use only the owner part
             'total_commits': total_commits,
             'pac_changes_count': pac_changes_count,
             'pac_commits_count': len(pac_commits),
