@@ -14,10 +14,10 @@ INPUTS_DIR = os.path.join(ROOT_DIR, 'inputs')
 # Comment this line and uncomment the line below to use the full dataset
 REPOS_CSV_PATH = os.path.join(INPUTS_DIR, 'repos-full-test.csv')
 #REPOS_CSV_PATH = os.path.join(INPUTS_DIR, 'repos-full.csv')
-FILES_CSV_PATH = os.path.join(INPUTS_DIR, 'files.csv')
+FILES_CSV_PATH = os.path.join(INPUTS_DIR, 'pac_files.csv')
 
 # Debug mode flag
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 def is_pac(repo_id, file):
     df = pd.read_csv(FILES_CSV_PATH)
