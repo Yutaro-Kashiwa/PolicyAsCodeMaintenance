@@ -172,16 +172,17 @@ class DataCollector:
             return {
                 'commit_id': commit.commit_id,
                 'author': commit.author,
+                'author_email': commit.author_email,
                 'message': commit.message,
                 'date': commit.date,
                 'files': commit.files,
                 'pac_changes': commit.pac_changes,
                 'other_changes': commit.other_changes,
                 'has_pac_changes': commit.has_pac_changes(),
-                'pac_additions': commit.get_pac_additions(),
-                'pac_deletions': commit.get_pac_deletions(),
-                'total_additions': commit.get_total_additions(),
-                'total_deletions': commit.get_total_deletions()
+                'pac_added_lines': commit.get_pac_added_lines(),
+                'pac_deleted_lines': commit.get_pac_deleted_lines(),
+                'total_added_lines': commit.get_total_added_lines(),
+                'total_deleted_lines': commit.get_total_deleted_lines()
             }
         else:
             return commit
@@ -322,24 +323,6 @@ class DataCollector:
         total_pac_changes = sum(r.get('pac_changes_count', 0) for r in results)
         total_pac_commits = sum(r.get('pac_commits_count', 0) for r in results)
         
-        # Calculate aggregate statistics
-        total_additions = sum(
-            r.get('statistics', {}).get('total_additions', 0) 
-            for r in results
-        )
-        total_deletions = sum(
-            r.get('statistics', {}).get('total_deletions', 0) 
-            for r in results
-        )
-        pac_additions = sum(
-            r.get('statistics', {}).get('pac_additions', 0) 
-            for r in results
-        )
-        pac_deletions = sum(
-            r.get('statistics', {}).get('pac_deletions', 0) 
-            for r in results
-        )
-        
         print(f"\n{'='*70}")
         print("POLICY AS CODE ANALYSIS SUMMARY")
         print(f"{'='*70}")
@@ -352,19 +335,9 @@ class DataCollector:
             print(f"PAC change ratio:          {total_pac_changes/total_commits:.2%}")
             print(f"PAC commit ratio:          {total_pac_commits/total_commits:.2%}")
         
-        print(f"\nLine Statistics:")
-        print(f"Total additions:           {total_additions:,}")
-        print(f"Total deletions:           {total_deletions:,}")
-        print(f"PAC additions:             {pac_additions:,}")
-        print(f"PAC deletions:             {pac_deletions:,}")
-        
-        if total_additions + total_deletions > 0:
-            pac_ratio = (pac_additions + pac_deletions) / (total_additions + total_deletions)
-            print(f"PAC line change ratio:     {pac_ratio:.2%}")
-        
         print(f"\nResults saved to: {output_path}")
         print(f"{'='*70}")
-    
+
     def run(self) -> int:
         """Run the complete analysis workflow.
         

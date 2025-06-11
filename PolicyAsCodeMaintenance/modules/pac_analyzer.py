@@ -62,6 +62,7 @@ class PacAnalyzer:
                 commit = Commit()
                 commit.commit_id = commit_id
                 commit.author = commit_info.get('author', '')
+                commit.author_email = commit_info.get('author_email', '')
                 commit.message = commit_info.get('message', '')
                 commit.date = commit_info.get('date', None)
                 commit.files = commit_info.get('files', [])
@@ -148,34 +149,33 @@ class PacAnalyzer:
         pac_changes_count, pac_commits = self.count_pac_changes_from_commits(repo_id, commits)
         
         # Calculate statistics
-        total_additions = sum(sum(change.get('additions', 0) for change in commit.changes) for commit in commits)
-        total_deletions = sum(sum(change.get('deletions', 0) for change in commit.changes) for commit in commits)
+        total_added_lines = sum(sum(change.get('additions', 0) for change in commit.changes) for commit in commits)
+        total_deleted_lines = sum(sum(change.get('deletions', 0) for change in commit.changes) for commit in commits)
         
         # PAC-specific statistics
-        pac_additions = 0
-        pac_deletions = 0
+        pac_added_lines = 0
+        pac_deleted_lines = 0
         for commit_id, pac_files in pac_commits.items():
             for pac_file in pac_files:
-                pac_additions += pac_file.get('additions', 0)
-                pac_deletions += pac_file.get('deletions', 0)
+                pac_added_lines += pac_file.get('additions', 0)
+                pac_deleted_lines += pac_file.get('deletions', 0)
         
         results = {
             'repository_id': repo_id,
             'repository_name': repo_name,
-            'project_name': project_name or repo_name,  # Use project_name if provided, else fall back to repo_name
+            'project_name': project_name,  # Use project_name if provided, else fall back to repo_name
             'total_commits': total_commits,
             'pac_changes_count': pac_changes_count,
             'pac_commits_count': len(pac_commits),
             'pac_change_ratio': pac_changes_count / total_commits if total_commits > 0 else 0,
-            'pac_commits': pac_commits,
             'commits': commits,  # Return Commit objects instead of raw changes
             'statistics': {
-                'total_additions': total_additions,
-                'total_deletions': total_deletions,
-                'total_changes': total_additions + total_deletions,
-                'pac_additions': pac_additions,
-                'pac_deletions': pac_deletions,
-                'pac_total_changes': pac_additions + pac_deletions
+                'total_added_lines': total_added_lines,
+                'total_deleted_lines': total_deleted_lines,
+                'total_modified_lines': total_added_lines + total_deleted_lines,
+                'pac_added_lines': pac_added_lines,
+                'pac_deleted_lines': pac_deleted_lines,
+                'pac_modified_lines': pac_added_lines + pac_deleted_lines
             }
         }
         
@@ -192,6 +192,7 @@ class Commit:
     def __init__(self):
         self.commit_id = None
         self.author = None
+        self.author_email = None
         self.message = None
         self.date = None
         self.files = []
@@ -203,19 +204,19 @@ class Commit:
         """Check if this commit contains PAC changes."""
         return len(self.pac_changes) > 0
     
-    def get_pac_additions(self) -> int:
+    def get_pac_added_lines(self) -> int:
         """Get total number of lines added in PAC files."""
         return sum(change.get('additions', 0) for change in self.pac_changes)
     
-    def get_pac_deletions(self) -> int:
+    def get_pac_deleted_lines(self) -> int:
         """Get total number of lines deleted in PAC files."""
         return sum(change.get('deletions', 0) for change in self.pac_changes)
     
-    def get_total_additions(self) -> int:
+    def get_total_added_lines(self) -> int:
         """Get total number of lines added in all files."""
         return sum(change.get('additions', 0) for change in self.changes)
     
-    def get_total_deletions(self) -> int:
+    def get_total_deleted_lines(self) -> int:
         """Get total number of lines deleted in all files."""
         return sum(change.get('deletions', 0) for change in self.changes)
     
