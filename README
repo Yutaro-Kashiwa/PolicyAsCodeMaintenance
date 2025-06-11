@@ -1,0 +1,4 @@
+To run
+1. xargs poetry add < requirements.txt
+2. cd PolicyAsCodeMaintenance
+3. poetry run python data_collect.py --repository_no=7ls
