@@ -83,10 +83,10 @@ def main() -> int:
         # Load repository list from CSV
         logging.info("Loading repository list from CSV...")
         repositories = load_repository_list(DEFAULT_REPOS_CSV)
-        studied_repositories = set()
+        missed_repositories = set()
         for r in repositories:
-            studied_repositories.add(r['full_name'])
-
+            missed_repositories.add(r['full_name'])
+        number_of_studied_repositories = len(missed_repositories)
         # Find output files
         logging.info("Scanning output directory for result files...")
         output_files = find_output_files(OUTPUTS_DIR)
@@ -98,12 +98,17 @@ def main() -> int:
             parent_dir_name = os.path.basename(os.path.dirname(path))
             file_name = os.path.splitext(os.path.basename(path))[0]
             full_name = f"{parent_dir_name}/{file_name}"
-            if full_name  in studied_repositories:
-                studied_repositories.remove(full_name)
+            if full_name  in missed_repositories:
+                missed_repositories.remove(full_name)
 
         print("-These projects might not have been collected yet.:------------------")
-        print("\n".join(sorted(studied_repositories)))
+        print("\n".join(sorted(missed_repositories)))
         print("-------------------")
+        print("All repositories:", number_of_studied_repositories)
+        number_of_misses = len(missed_repositories)
+        print("Missed repositories:", number_of_misses, f"{number_of_misses/number_of_studied_repositories}%")
+        number_of_completions = (number_of_studied_repositories-len(missed_repositories))
+        print("Collected repositories:", number_of_completions, f"{number_of_completions/number_of_studied_repositories}%")
         return 0
         
     except Exception as e:
