@@ -244,22 +244,22 @@ class DataCollector:
         # If repository_no is specified and we have exactly one result, use repository name
         if self.config.repository_no is not None and len(results) == 1:
             # Prefer project_name (e.g., 'aws/aws-cdk') over repository_name (e.g., 'aws-cdk')
-            project_name = results[0].get('project_name')
+            owner_name = results[0].get('owner_name')
             repository_name = results[0].get('repository_name', '')
             
-            if project_name and repository_name:
+            if owner_name and repository_name:
                 # Replace problematic characters for valid filename
-                safe_project = project_name.replace('/', '_').replace('\\', '_')
-                safe_project = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_project)
+                safe_owner = owner_name.replace('/', '_').replace('\\', '_')
+                safe_owner = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_owner)
                 safe_repo = repository_name.replace('/', '_').replace('\\', '_')
                 safe_repo = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_repo)
                 
                 # Ensure the output directory exists
-                output_dir = Path("outputs") / safe_project
+                output_dir = Path("outputs") / safe_owner
                 if not output_dir.exists():
                     output_dir.mkdir(parents=True, exist_ok=True)
                 
-                return f"outputs/{safe_project}/{safe_repo}.json"
+                return f"outputs/{safe_owner}/{safe_repo}.json"
             else:
                 raise
 

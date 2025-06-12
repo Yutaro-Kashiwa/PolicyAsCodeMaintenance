@@ -7,6 +7,7 @@ PARENT_DIR = os.path.dirname(SCRIPT_DIR)
 ROOT_DIR = os.path.dirname(PARENT_DIR)
 REPOS_DIR = os.path.join(ROOT_DIR, 'repos')
 INPUTS_DIR = os.path.join(ROOT_DIR, 'inputs')
+OUTPUTS_DIR = os.path.join(ROOT_DIR, 'outputs')
 
 # CSV file paths
 REPOS_CSV_PATH = os.path.join(INPUTS_DIR, 'repos-full.csv')
