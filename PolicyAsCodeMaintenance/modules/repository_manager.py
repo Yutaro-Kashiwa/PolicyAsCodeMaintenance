@@ -107,8 +107,7 @@ class RepositoryManager:
         for repo_info in repo_list:
             if repo_info['full_name'].endswith(repo_name):
                 return {'id': repo_info['id'], 'full_name': repo_info['full_name']}
-        
-        logger.warning(f"Could not find repository info for: {repo_name}")
+
         return None
     
     def get_cloned_repositories(self) -> List[str]:

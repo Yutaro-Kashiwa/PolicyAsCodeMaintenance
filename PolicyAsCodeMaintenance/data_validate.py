@@ -1,11 +1,9 @@
 """Data validation script to check which repositories have been processed."""
-import argparse
-import json
+
 import logging
 import sys
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
-from datetime import datetime
+from typing import List, Dict
 import os
 from data_collect import AnalysisConfig, DataCollector
 from modules.repository_manager import RepositoryManager

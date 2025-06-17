@@ -5,6 +5,8 @@ import logging
 import sys
 from dataclasses import dataclass
 from datetime import datetime
+import time
+
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -133,13 +135,12 @@ class DataCollector:
             # Find repository info
             repo_info = self.repo_manager.get_repository_info(repo_list, repo_name)
             if repo_info is None:
-                self.logger.error(f"Skipping {repo_name}: Could not find repository info")
                 continue
             
             repo_id = repo_info['id']
             full_name = repo_info['full_name']
             
-            self.logger.info(f"Analyzing repository {i}/{len(cloned_repos)}: {full_name}")
+            self.logger.info(f"Analyzing repository: {full_name}")
             
             # Get commit changes
             changes = self.repo_manager.get_repository_changes(repo_name)
@@ -187,7 +188,7 @@ class DataCollector:
         else:
             return commit
     
-    def serialize_results_for_json(self, results: List[Dict]) -> Dict:
+    def serialize_results_for_json(self, results: List[Dict], start_time) -> Dict:
         """Convert results to JSON-serializable format.
         
         Args:
@@ -215,10 +216,13 @@ class DataCollector:
                 serialized_result['commits'] = commits_data
             
             serialized_results.append(serialized_result)
-        
+        end_time = time.time()
+        execution_time = end_time - start_time
         # Create metadata
         metadata = {
-            'analysis_timestamp': datetime.now().isoformat(),
+            'analysis_start': start_time,
+            'analysis_endtime': end_time,
+            'analysis_duration': execution_time,
             'configuration': {
                 'repository_no': self.config.repository_no,
                 'use_test_mode': self.config.use_test_mode,
@@ -267,7 +271,7 @@ class DataCollector:
         # Otherwise, use the configured output path
         return self.config.output_path
     
-    def save_results_to_json(self, results: List[Dict]) -> str:
+    def save_results_to_json(self, results: List[Dict], start_time) -> str:
         """Save analysis results to JSON file.
         
         Args:
@@ -298,7 +302,7 @@ class DataCollector:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             
             # Convert results to JSON-serializable format
-            json_data = self.serialize_results_for_json(results)
+            json_data = self.serialize_results_for_json(results, start_time)
             
             # Write to JSON file
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -345,6 +349,7 @@ class DataCollector:
             Exit code (0 for success, 1 for failure)
         """
         try:
+            start_time = time.time()
             # Setup logging
             self.setup_logging()
             
@@ -356,13 +361,14 @@ class DataCollector:
             
             # Analyze repositories
             results = self.analyze_repositories(repo_list)
-            
+
+
             if not results:
                 self.logger.warning("No analysis results generated")
                 return 1
             
             # Save results to JSON
-            output_path = self.save_results_to_json(results)
+            output_path = self.save_results_to_json(results, start_time)
             
             # Print summary
             self.print_summary(results, output_path)
