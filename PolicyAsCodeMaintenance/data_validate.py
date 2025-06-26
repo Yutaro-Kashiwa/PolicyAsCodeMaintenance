@@ -85,6 +85,7 @@ def main() -> int:
         for r in repositories:
             missed_repositories.add(r['full_name'])
         number_of_studied_repositories = len(missed_repositories)
+        print("# of all repos", number_of_studied_repositories)
         # Find output files
         logging.info("Scanning output directory for result files...")
         output_files = find_output_files(OUTPUTS_DIR)

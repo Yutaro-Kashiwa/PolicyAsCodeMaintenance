@@ -36,6 +36,9 @@ class AnalysisConfig:
         return REPOS_TEST_CSV_PATH if (self.use_test_mode or USE_TEST_MODE) else DEFAULT_REPOS_CSV
 
 
+
+
+
 class DataCollector:
     """Main class for collecting and analyzing repository data."""
     
@@ -235,8 +238,25 @@ class DataCollector:
             'metadata': metadata,
             'repositories': serialized_results
         }
-    
-    def get_output_filename(self, results: List[Dict]) -> str:
+
+    def get_output_filename(self, owner_name, repository_name):
+        if owner_name and repository_name:
+            # Replace problematic characters for valid filename
+            safe_owner = owner_name.replace('/', '_').replace('\\', '_')
+            safe_owner = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_owner)
+            safe_repo = repository_name.replace('/', '_').replace('\\', '_')
+            safe_repo = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_repo)
+
+            # Ensure the output directory exists
+            output_dir = Path("outputs") / safe_owner
+            if not output_dir.exists():
+                output_dir.mkdir(parents=True, exist_ok=True)
+
+            return f"outputs/{safe_owner}/{safe_repo}.json"
+        else:
+            raise ValueError("Owner name and repository name are required")
+
+    def get_output_filename_from_results(self, results: List[Dict]) -> str:
         """Determine the output filename based on configuration and results.
         
         Args:
@@ -251,21 +271,7 @@ class DataCollector:
             owner_name = results[0].get('owner_name')
             repository_name = results[0].get('repository_name', '')
             
-            if owner_name and repository_name:
-                # Replace problematic characters for valid filename
-                safe_owner = owner_name.replace('/', '_').replace('\\', '_')
-                safe_owner = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_owner)
-                safe_repo = repository_name.replace('/', '_').replace('\\', '_')
-                safe_repo = ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in safe_repo)
-                
-                # Ensure the output directory exists
-                output_dir = Path("outputs") / safe_owner
-                if not output_dir.exists():
-                    output_dir.mkdir(parents=True, exist_ok=True)
-                
-                return f"outputs/{safe_owner}/{safe_repo}.json"
-            else:
-                raise
+            return self.get_output_filename(owner_name, repository_name)
 
         
         # Otherwise, use the configured output path
@@ -285,7 +291,7 @@ class DataCollector:
         """
         try:
             # Determine output filename
-            output_filename = self.get_output_filename(results)
+            output_filename = self.get_output_filename_from_results(results)
             
             # Log if we're using repository name
             if output_filename != self.config.output_path:
@@ -355,7 +361,10 @@ class DataCollector:
             
             # Load repositories
             repo_list = self.load_repositories()
-            
+            # Skip if we have already made an output for this project
+            if self.is_exist_outputfiles(repo_list):
+                self.logger.info("Skipping analysis - output file already exists")
+                return 0
             # Clone and checkout repositories
             self.clone_and_checkout_repositories(repo_list)
             
@@ -379,6 +388,42 @@ class DataCollector:
         except Exception as e:
             self.logger.error(f"Fatal error: {e}", exc_info=True)
             return 1
+
+    def is_exist_outputfiles(self, repo_list: List[Dict]) -> bool:
+        """Check if output files already exist for the repositories.
+        
+        Args:
+            repo_list: List of repository information
+            
+        Returns:
+            True if output files exist for all repositories, False otherwise
+        """
+        # For single repository analysis, check if output file exists
+        if self.config.repository_no is not None and len(repo_list) == 1:
+            repo = repo_list[0]
+            full_name = repo.get('full_name', '')
+            
+            if full_name and '/' in full_name:
+                owner_name, repository_name = full_name.split('/', 1)
+                try:
+                    output_filename = self.get_output_filename(owner_name, repository_name)
+                    output_path = Path(output_filename)
+                    
+                    # Make absolute path if needed
+                    if not output_path.is_absolute():
+                        project_root = Path(__file__).parent.parent
+                        output_path = project_root / output_path
+                    
+                    if output_path.exists():
+                        self.logger.info(f"Output file already exists: {output_path}")
+                        return True
+                except Exception as e:
+                    self.logger.debug(f"Error checking output file: {e}")
+                    return False
+        
+        # For multiple repositories, we proceed with analysis
+        # (could be extended to check all output files if needed)
+        return False
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -449,7 +494,7 @@ def main() -> int:
     
     # Create configuration
     config = AnalysisConfig(
-        repository_no=args.repository_no,
+        repository_no=175,
         use_test_mode=args.test,
         skip_clone=args.no_clone,
         verbose=args.verbose,

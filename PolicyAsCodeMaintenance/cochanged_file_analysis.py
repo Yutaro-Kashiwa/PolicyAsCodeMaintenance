@@ -392,7 +392,7 @@ def main():
         
         # Mine association rules
         print("Mining association rules...")
-        rules = mine_association_rules(cochange_data, min_support=0.005, min_confidence=0.1)
+        rules = mine_association_rules(cochange_data, min_support=0.1, min_confidence=0.8)
         
         # Print report
         print_association_rules_report(rules, stats)

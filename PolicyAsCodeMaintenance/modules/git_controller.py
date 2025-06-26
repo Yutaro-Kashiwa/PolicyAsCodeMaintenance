@@ -101,8 +101,46 @@ def clone_repository(repo_name, cloned_path):
 
         # Check if already cloned
         if os.path.exists(local_path):
-            print(f"Repository '{repo_name}' already exists at {local_path}, skipping...")
-            return True
+            try:
+                print(f"Repository '{repo_name}' already exists at {local_path}, updating...")
+                # Open existing repository
+                repo = pygit2.Repository(local_path)
+                # Get remote origin
+                remote = repo.remotes["origin"]
+                # Fetch latest changes
+                remote.fetch()
+                
+                # Get the default branch (usually main or master)
+                # Try to get the remote's default branch first
+                try:
+                    # Try main branch first
+                    main_ref = remote.get_refspec(0).dst
+                    if "main" in main_ref:
+                        default_branch_ref = repo.references["refs/remotes/origin/main"].target
+                    else:
+                        default_branch_ref = repo.references["refs/remotes/origin/master"].target
+                except (KeyError, IndexError):
+                    # Fallback to local branches
+                    try:
+                        default_branch_ref = repo.references["refs/heads/main"].target
+                    except KeyError:
+                        try:
+                            default_branch_ref = repo.references["refs/heads/master"].target
+                        except KeyError:
+                            # Use current HEAD as last resort
+                            default_branch_ref = repo.head.target
+                
+                # Reset to the latest commit (hard reset)
+                repo.reset(default_branch_ref, pygit2.GIT_RESET_HARD)
+                
+                print(f"Successfully updated {repo_name}")
+                return True
+                
+            except Exception as e:
+                print(f"Failed to update {repo_name}: {str(e)}, will try to re-clone...")
+                # If update fails, fall through to re-clone
+                import shutil
+                shutil.rmtree(local_path)
 
         print(f"Cloning {repo_name} to {local_path}...")
 
