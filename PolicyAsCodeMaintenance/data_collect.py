@@ -494,7 +494,7 @@ def main() -> int:
     
     # Create configuration
     config = AnalysisConfig(
-        repository_no=175,
+        repository_no=args.repository_no,
         use_test_mode=args.test,
         skip_clone=args.no_clone,
         verbose=args.verbose,
