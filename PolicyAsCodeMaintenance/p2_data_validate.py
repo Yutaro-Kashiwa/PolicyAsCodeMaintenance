@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import List, Dict
 import os
-from data_collect import AnalysisConfig, DataCollector
+from p1_data_collect import AnalysisConfig, DataCollector
 from modules.repository_manager import RepositoryManager
 from modules.config import REPOS_DIR, DEFAULT_REPOS_CSV, OUTPUTS_DIR
 

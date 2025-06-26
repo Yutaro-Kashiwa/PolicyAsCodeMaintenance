@@ -16,6 +16,8 @@ def get_commit_changes(repo_path):
     commit_changes = {}
 
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL):
+        if len(commit.parents) >= 2:
+            continue
         commit_id = str(commit.id)
         commit_info = {
             'files': [],
