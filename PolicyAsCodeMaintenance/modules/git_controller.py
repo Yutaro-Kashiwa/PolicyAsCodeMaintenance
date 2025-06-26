@@ -3,6 +3,14 @@ import pygit2
 from pathlib import Path
 import os
 
+# File status constants from pygit2
+# These values indicate the type of change for each file
+GIT_DELTA_ADDED = 1      # File is newly added
+GIT_DELTA_DELETED = 2    # File is deleted
+GIT_DELTA_MODIFIED = 3   # File is modified
+GIT_DELTA_RENAMED = 4    # File is renamed
+GIT_DELTA_COPIED = 5     # File is copied
+
 def get_commit_changes(repo_path):
     repo = pygit2.Repository(repo_path)
     commit_changes = {}
@@ -33,11 +41,15 @@ def get_commit_changes(repo_path):
                 additions = patch.line_stats[1]  # Number of additions
                 deletions = patch.line_stats[2]  # Number of deletions
                 
+                # Get file status (added, deleted, modified, etc.)
+                file_status = patch.delta.status
+                
                 commit_info['changes'].append({
                     'file': file_path,
                     'additions': additions,
                     'deletions': deletions,
-                    'total_changes': additions + deletions
+                    'total_changes': additions + deletions,
+                    'status': file_status  # 1=added, 2=deleted, 3=modified, 4=renamed, 5=copied
                 })
         else:
             # Initial commit (no parents)
@@ -67,7 +79,8 @@ def get_commit_changes(repo_path):
                             'file': full_path,
                             'additions': lines,
                             'deletions': 0,
-                            'total_changes': lines
+                            'total_changes': lines,
+                            'status': GIT_DELTA_ADDED  # Initial commit files are all new
                         })
             
             walk_tree(tree)

@@ -92,26 +92,54 @@ class PacAnalyzer:
             
             for file_path in commit.files:
                 if self.is_pac_file(repo_id, file_path):
-                    # Include line statistics if available
-                    file_info = {
-                        'file': file_path,
-                        'additions': 0,
-                        'deletions': 0,
-                        'total_changes': 0
-                    }
+                    # Get change info for this file
                     if file_path in change_map:
-                        file_info.update(change_map[file_path])
-                    pac_files_in_commit.append(file_info)
+                        change_info = change_map[file_path]
+                        file_status = change_info.get('status', None)
+                        
+                        # Ignore introduction (added) or deletion of PaC files
+                        # Only count modifications (status=3), renames (status=4), or copies (status=5)
+                        # Status values: 1=added, 2=deleted, 3=modified, 4=renamed, 5=copied
+                        if file_status in [1, 2]:  # Skip added or deleted files
+                            logger.debug(f"Skipping {'added' if file_status == 1 else 'deleted'} PaC file: {file_path}")
+                            continue
+                        
+                        # Include line statistics for modified/renamed/copied files
+                        file_info = {
+                            'file': file_path,
+                            'additions': change_info.get('additions', 0),
+                            'deletions': change_info.get('deletions', 0),
+                            'total_changes': change_info.get('total_changes', 0),
+                            'status': file_status
+                        }
+                        pac_files_in_commit.append(file_info)
+                    else:
+                        # If no change info available, we can't determine status, so skip
+                        logger.debug(f"No change info for PaC file: {file_path}, skipping")
+                        continue
             
             # Identify other (non-PAC) changes
             other_changes = []
             for file_path in commit.files:
                 if not self.is_pac_file(repo_id, file_path):
+                    # Get change info for this file
+                    if file_path in change_map:
+                        change_info = change_map[file_path]
+                        file_status = change_info.get('status', None)
+
+                        # Ignore introduction (added) or deletion of PaC files
+                        # Only count modifications (status=3), renames (status=4), or copies (status=5)
+                        # Status values: 1=added, 2=deleted, 3=modified, 4=renamed, 5=copied
+                        if file_status in [1, 2]:  # Skip added or deleted files
+                            logger.debug(f"Skipping {'added' if file_status == 1 else 'deleted'} Non-PaC file: {file_path}")
+                            continue
+
                     file_info = {
                         'file': file_path,
                         'additions': 0,
                         'deletions': 0,
-                        'total_changes': 0
+                        'total_changes': 0,
+                        'status': None
                     }
                     if file_path in change_map:
                         file_info.update(change_map[file_path])
