@@ -136,7 +136,7 @@ def main() -> int:
         logging.error(f"Fatal error: {e}", exc_info=True)
         return 1
 
-RETRIEVE_MISSED_REPOSITORIES = True
+RETRIEVE_MISSED_REPOSITORIES = False
 
 if __name__ == "__main__":
     sys.exit(main())

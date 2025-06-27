@@ -264,7 +264,6 @@ class DataCollector:
             # Prefer project_name (e.g., 'aws/aws-cdk') over repository_name (e.g., 'aws-cdk')
             owner_name = results[0].get('owner_name')
             repository_name = results[0].get('repository_name', '')
-            
             return self.get_output_filename(owner_name, repository_name)
 
         
@@ -488,7 +487,7 @@ def main() -> int:
     
     # Create configuration
     config = AnalysisConfig(
-        repository_no=args.repository_no,
+        repository_no=420,
         use_test_mode=args.test,
         skip_clone=args.no_clone,
         verbose=args.verbose,

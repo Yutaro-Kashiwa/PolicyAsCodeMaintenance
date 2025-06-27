@@ -156,12 +156,12 @@ class PacAnalyzer:
         
         return pac_changes_count, pac_commits
     
-    def analyze_repository(self, repo_id: int, repo_name: str, commit_changes: Dict[str, Dict], project_name: str = None) -> Dict:
+    def analyze_repository(self, repo_id: int, repo_full_name: str, commit_changes: Dict[str, Dict], project_name: str = None) -> Dict:
         """Analyze PAC changes in a repository using Commit objects.
         
         Args:
             repo_id: Repository ID
-            repo_name: Repository name (e.g., 'aws-cdk')
+            repo_full_name: Repository name (e.g., 'aws-cdk')
             commit_changes: Dictionary mapping commit IDs to commit info dictionaries
             project_name: Full project name including owner (e.g., 'aws/aws-cdk') - will be parsed to extract only owner
             
@@ -192,7 +192,8 @@ class PacAnalyzer:
         owner = None
         if project_name and '/' in project_name:
             owner = project_name.split('/')[0]
-        
+            repo_name = project_name.split('/')[1]
+
         results = {
             'repository_id': repo_id,
             'project_name': project_name,  # Use only the owner part
@@ -213,7 +214,7 @@ class PacAnalyzer:
             }
         }
         
-        display_name = project_name if project_name else repo_name
+        display_name = project_name if project_name else repo_full_name
         logger.info(
             f"{display_name}: {pac_changes_count} PAC changes in {len(pac_commits)} commits "
             f"out of {total_commits} total commits ({results['pac_change_ratio']:.2%})"
