@@ -11,7 +11,6 @@ from modules.config import REPOS_DIR, DEFAULT_REPOS_CSV, OUTPUTS_DIR
 
 import pandas as pd
 
-RETRIEVE_MISSED_REPOSITORIES = True
 
 
 def load_repository_list(csv_path: str) -> List[Dict[str, str]]:
@@ -100,23 +99,24 @@ def main() -> int:
             if full_name in missed_repositories:
                 missed_repositories.remove(full_name)
 
-        print("-These projects might not have been collected yet.:------------------")
-        print("\n".join(sorted(missed_repositories)))
+        # print("-These projects might not have been collected yet.:------------------")
+        # print("\n".join(sorted(missed_repositories)))
         print("-------------------")
         print("All repositories:", number_of_studied_repositories)
-        number_of_misses = len(missed_repositories)
-        print("Missed repositories:", number_of_misses, f"{number_of_misses / number_of_studied_repositories}%")
         number_of_completions = (number_of_studied_repositories - len(missed_repositories))
         print("Collected repositories:", number_of_completions,
               f"{number_of_completions / number_of_studied_repositories}%")
-        if RETRIEVE_MISSED_REPOSITORIES:
-            for m in missed_repositories:
-                i = 0
-                for r in repositories:
-                    i += 1
-                    if r['full_name'] == m:
-                        print(r['full_name'], i)
-                        break
+        number_of_misses = len(missed_repositories)
+        print("Missed repositories:", number_of_misses, f"{number_of_misses / number_of_studied_repositories}%")
+
+        for m in missed_repositories:
+            i = 0
+            for r in repositories:
+                i += 1
+                if r['full_name'] == m:
+                    print(r['full_name'], i)
+                    break
+            if RETRIEVE_MISSED_REPOSITORIES:
 
                 config = AnalysisConfig(
                     repository_no=i,
@@ -136,6 +136,7 @@ def main() -> int:
         logging.error(f"Fatal error: {e}", exc_info=True)
         return 1
 
+RETRIEVE_MISSED_REPOSITORIES = True
 
 if __name__ == "__main__":
     sys.exit(main())

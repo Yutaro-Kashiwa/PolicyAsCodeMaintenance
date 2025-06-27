@@ -111,8 +111,9 @@ def clone_repository(repo_name, cloned_path):
         github_url = f"https://github.com/{repo_name}.git"
 
         # Get local directory name from repository name
-        local_repo_name = repo_name.split('/')[-1]
-        local_path = os.path.join(cloned_path, local_repo_name)
+        # local_repo_name = repo_name.split('/')[-1]
+        # local_path = os.path.join(cloned_path, local_repo_name)
+        local_path = os.path.join(cloned_path, repo_name)
 
         # Check if already cloned
         if os.path.exists(local_path):
@@ -167,7 +168,7 @@ def clone_repository(repo_name, cloned_path):
 
     except pygit2.GitError as e:
         print(f"Failed to clone {repo_name}: {str(e)}")
-        return False
+        raise RuntimeError(f"Failed to clone {repo_name}: {str(e)}")
     except Exception as e:
         print(f"Error cloning {repo_name}: {str(e)}")
-        return False
+        raise RuntimeError(f"Exception: Anonymous error happen (i.e., not pygit2.GitError) to clone {repo_name}: {str(e)}")

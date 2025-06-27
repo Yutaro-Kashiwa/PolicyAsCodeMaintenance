@@ -54,29 +54,19 @@ class RepositoryManager:
         Returns:
             Dictionary with cloning statistics (success, failed, skipped counts)
         """
-        if not repo_list:
-            logger.warning("No repositories to clone")
-            return {'success': 0, 'failed': 0, 'skipped': 0}
-        
-        stats = {'success': 0, 'failed': 0, 'skipped': 0}
+
         total = len(repo_list)
-        
         for i, repo_info in enumerate(repo_list, 1):
             repo_name = repo_info['full_name']
             logger.info(f"Cloning repository {i}/{total}: {repo_name}")
             
             result = clone_repository(repo_name, self.repos_dir)
-            if result:
-                stats['success'] += 1
-            else:
-                stats['failed'] += 1
-        
-        logger.info(
-            f"Cloning completed: {stats['success']} successful, "
-            f"{stats['failed']} failed, {stats['skipped']} skipped"
-        )
-        return stats
-    
+
+            logger.info(
+                f"Cloning completed: {repo_name} successful, "
+            )
+
+
     def get_repository_id(self, repo_list: List[Dict], repo_name: str) -> Optional[int]:
         """Find repository ID by matching repository name.
         
@@ -134,7 +124,7 @@ class RepositoryManager:
             return changes
         except Exception as e:
             logger.error(f"Failed to get changes for {repo_name}: {e}")
-            return {}
+            raise RuntimeError("Exception: Failed to get changes for {repo_name}: {e}")
 
     def checkout(self, repo_list: List[Dict]) -> Dict[str, int]:
         """Checkout specific commits in cloned repositories.
@@ -147,9 +137,9 @@ class RepositoryManager:
         """
         if not repo_list:
             logger.warning("No repositories to checkout")
-            return {'success': 0, 'failed': 0, 'skipped': 0}
+            raise RuntimeError("No repositories to checkout")
         
-        stats = {'success': 0, 'failed': 0, 'skipped': 0}
+
         total = len(repo_list)
         
         for i, repo_info in enumerate(repo_list, 1):
@@ -158,18 +148,17 @@ class RepositoryManager:
             
             if not sha:
                 logger.warning(f"No SHA provided for {repo_name}, skipping checkout")
-                stats['failed'] += 1
-                continue
+                raise RuntimeError(f"No SHA provided for {repo_name}, skipping checkout")
             
             # Get local directory name from repository name
-            local_repo_name = repo_name.split('/')[-1]
-            repo_path = os.path.join(self.repos_dir, local_repo_name)
+            # local_repo_name = repo_name.split('/')[-1]
+            repo_path = os.path.join(self.repos_dir, repo_name)
             
             # Check if repository exists
             if not os.path.exists(repo_path):
                 logger.error(f"Repository {repo_name} not found at {repo_path}, skipping checkout")
-                stats['failed'] += 1
-                continue
+                raise RuntimeError(f"Repository {repo_name} not found at {repo_path}")
+
             
             logger.info(f"Checking out {repo_name} at commit {sha} ({i}/{total})")
             
@@ -180,8 +169,7 @@ class RepositoryManager:
                 commit = repo.get(sha)
                 if not commit:
                     logger.error(f"Commit {sha} not found in {repo_name}")
-                    stats['failed'] += 1
-                    continue
+                    commit = repo.get("HEAD")
                 
                 # Checkout the commit
                 repo.checkout_tree(commit)
@@ -190,17 +178,15 @@ class RepositoryManager:
                 repo.set_head(commit.id)
                 
                 logger.info(f"Successfully checked out {repo_name} at {sha}")
-                stats['success'] += 1
-                
+
+
             except pygit2.GitError as e:
                 logger.error(f"Git error during checkout of {repo_name}: {e}")
-                stats['failed'] += 1
+                raise RuntimeError(f"Git error during checkout of {repo_name}: {e}")
             except Exception as e:
                 logger.error(f"Failed to checkout {repo_name} at {sha}: {e}")
-                stats['failed'] += 1
+                raise RuntimeError(f"Anonymous Error: Failed to checkout {repo_name} at {sha}: {e}")
         
-        logger.info(
-            f"Checkout completed: {stats['success']} successful, "
-            f"{stats['failed']} failed, {stats['skipped']} skipped"
-        )
-        return stats
+            logger.info(
+                f"Checkout completed: {repo_name} successful, "
+            )

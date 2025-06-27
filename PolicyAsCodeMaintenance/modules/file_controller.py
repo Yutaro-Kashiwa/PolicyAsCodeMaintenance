@@ -34,12 +34,13 @@ def load_repository_list(csv_path='repos.csv', target_no = None):
             i+=1
             if not target_no is None:
                 if not i == target_no:
-                    print("SKIPPING: ", row['full_name'])
+                    # print("SKIPPING: ", row['full_name'])
                     continue
             repo_info = {
                 'full_name': row['full_name'],
                 'id': row['id'],
-                'sha': row['last_commit_sha']
+                'sha': row['last_commit_sha'],
+                'index': i
             }
             repo_list.append(repo_info)
 

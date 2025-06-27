@@ -99,21 +99,16 @@ class DataCollector:
         
         # Clone repositories
         self.logger.info("Starting repository cloning...")
-        clone_stats = self.repo_manager.clone_repositories(repo_list)
+        self.repo_manager.clone_repositories(repo_list)
         
-        if clone_stats['success'] == 0 and clone_stats['failed'] > 0:
-            raise RuntimeError("All repository cloning attempts failed")
+
         
         # Checkout specific commits
         self.logger.info("Starting repository checkout...")
-        checkout_stats = self.repo_manager.checkout(repo_list)
-        
-        if checkout_stats['success'] == 0 and checkout_stats['failed'] > 0:
-            raise RuntimeError("All repository checkout attempts failed")
+        self.repo_manager.checkout(repo_list)
         
         self.logger.info(
             f"Repository preparation complete. "
-            f"Cloned: {clone_stats['success']}, Checked out: {checkout_stats['success']}"
         )
     
     def analyze_repositories(self, repo_list: List[Dict]) -> List[Dict]:
@@ -130,15 +125,14 @@ class DataCollector:
         
         if not cloned_repos:
             self.logger.warning("No cloned repositories found to analyze")
-            return results
+            raise RuntimeError("No cloned repositories found to analyze")
         
         self.logger.info(f"Analyzing {len(cloned_repos)} repositories...")
         
-        for i, repo_name in enumerate(cloned_repos, 1):
+        for repo_info in repo_list:
+            # print(repo)
             # Find repository info
-            repo_info = self.repo_manager.get_repository_info(repo_list, repo_name)
-            if repo_info is None:
-                continue
+
             
             repo_id = repo_info['id']
             full_name = repo_info['full_name']
@@ -146,19 +140,19 @@ class DataCollector:
             self.logger.info(f"Analyzing repository: {full_name}")
             
             # Get commit changes
-            changes = self.repo_manager.get_repository_changes(repo_name)
+            changes = self.repo_manager.get_repository_changes(full_name)
             if not changes:
-                self.logger.warning(f"No commits found for {repo_name}")
-                continue
+                self.logger.warning(f"No commits found for {full_name}")
+                raise RuntimeError(f"No commits found for {full_name}")
             
             # Analyze PAC changes
             try:
-                analysis_result = self.pac_analyzer.analyze_repository(repo_id, repo_name, changes, full_name)
+                analysis_result = self.pac_analyzer.analyze_repository(repo_id, full_name, changes, full_name)
                 results.append(analysis_result)
-                self.logger.debug(f"Successfully analyzed {repo_name}")
+                self.logger.debug(f"Successfully analyzed {full_name}")
             except Exception as e:
-                self.logger.error(f"Failed to analyze {repo_name}: {e}")
-                continue
+                self.logger.error(f"Failed to analyze {full_name}: {e}")
+                raise RuntimeError(f"Failed to analyze {full_name}: {e}")
         
         self.logger.info(f"Analysis completed for {len(results)} repositories")
         return results
