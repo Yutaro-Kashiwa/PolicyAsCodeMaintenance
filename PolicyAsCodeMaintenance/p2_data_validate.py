@@ -7,7 +7,7 @@ from typing import List, Dict
 import os
 from p1_data_collect import AnalysisConfig, DataCollector
 from modules.repository_manager import RepositoryManager
-from modules.config import REPOS_DIR, DEFAULT_REPOS_CSV, OUTPUTS_DIR
+from modules.config import REPOS_DIR, DEFAULT_REPOS_CSV, OUTPUTS_DIR, NO_LONGER_EXIST_REPOSITORIES
 
 import pandas as pd
 
@@ -66,9 +66,10 @@ def find_output_files(output_dir: str) -> Dict[str, Path]:
             continue
 
         # Get the repository name from the file path
-        # Expected structure: outputs/owner_repo/repo.json or outputs/repo.json
+        # Expected structure: outputs/owner_repo/repo.json
         repo_name = json_file.stem  # filename without extension
-        output_files[repo_name] = json_file
+        owner_repo = json_file.parent.name
+        output_files[f"{owner_repo}/{repo_name}"] = json_file
 
     logging.info(f"Found {len(output_files)} output files in {output_path}")
     return output_files
@@ -117,7 +118,8 @@ def main() -> int:
                     print(r['full_name'], i)
                     break
             if RETRIEVE_MISSED_REPOSITORIES:
-
+                if r['full_name'] in NO_LONGER_EXIST_REPOSITORIES:
+                    continue
                 config = AnalysisConfig(
                     repository_no=i,
                     use_test_mode=False,
@@ -136,7 +138,7 @@ def main() -> int:
         logging.error(f"Fatal error: {e}", exc_info=True)
         return 1
 
-RETRIEVE_MISSED_REPOSITORIES = False
+RETRIEVE_MISSED_REPOSITORIES = True
 
 if __name__ == "__main__":
     sys.exit(main())

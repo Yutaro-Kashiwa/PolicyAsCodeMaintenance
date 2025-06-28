@@ -36,7 +36,10 @@ def get_commit_changes(repo_path):
             diff.find_similar()
             
             for patch in diff:
-                file_path = patch.delta.new_file.path
+                try:
+                    file_path = patch.delta.new_file.path
+                except Exception:
+                    continue
                 commit_info['files'].append(file_path)
                 
                 # Get line statistics for this file
@@ -84,8 +87,10 @@ def get_commit_changes(repo_path):
                             'total_changes': lines,
                             'status': GIT_DELTA_ADDED  # Initial commit files are all new
                         })
-            
-            walk_tree(tree)
+            try:
+                walk_tree(tree)
+            except Exception:
+                pass
 
         commit_changes[commit_id] = commit_info
 

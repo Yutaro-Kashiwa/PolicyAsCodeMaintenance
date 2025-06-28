@@ -3,6 +3,8 @@ import os
 import logging
 from typing import List, Dict, Optional
 import pygit2
+
+from .config import REPOSITORIES_THAT_SHOULD_USE_HEAD
 from .file_controller import load_repository_list, list_directories
 from .git_controller import get_commit_changes, clone_repository
 
@@ -169,8 +171,14 @@ class RepositoryManager:
                 commit = repo.get(sha)
                 if not commit:
                     logger.error(f"Commit {sha} not found in {repo_name}")
-                    commit = repo.get("HEAD")
-                
+                    commit = repo.revparse_single('HEAD')
+
+                # The specified sha in the dataset no longer exist so we will use HEAD
+                if repo_name in REPOSITORIES_THAT_SHOULD_USE_HEAD:
+                    logger.info(f"Skipping checkout for {repo_name}")
+                    print(f"Skipping checkout for {repo_name}")
+                    commit = repo.revparse_single('HEAD')
+
                 # Checkout the commit
                 repo.checkout_tree(commit)
                 
