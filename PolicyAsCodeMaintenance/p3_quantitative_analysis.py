@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 
-from data_validate import find_output_files
+from p2_data_validate import find_output_files
 from modules.config import OUTPUTS_DIR
 
 
@@ -180,7 +180,7 @@ def create_violin_plots(frequencies, percentage_contributors, median_changed_lin
     sns.violinplot(data=df_code_changes, x='Code Type', y='Median Lines Changed', ax=axes[1, 1],
                    palette=['salmon', 'skyblue'])
     axes[1, 1].set_title('PAC vs Non-PAC Code Changes Distribution', fontsize=14, fontweight='bold')
-    axes[1, 1].set_ylabel('Median Lines Changed (within PAC commits)', fontsize=12)
+    axes[1, 1].set_ylabel('Median Lines Changed', fontsize=12)
     axes[1, 1].set_yscale('log')
     axes[1, 1].set_yticks([1, 10, 100, 1000, 10000])
     axes[1, 1].set_ylim(bottom=0.1)  # Ensure no negative values, use 0.1 for log scale

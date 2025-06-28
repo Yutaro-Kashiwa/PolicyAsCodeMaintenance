@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 # Import data loading functions from quantitative_analysis
-from quantitative_analysis import read_outputfiles
-from data_validate import find_output_files
+from p3_quantitative_analysis import read_outputfiles
+from p2_data_validate import find_output_files
 from modules.config import OUTPUTS_DIR
 
 
