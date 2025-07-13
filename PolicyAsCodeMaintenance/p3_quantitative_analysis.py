@@ -127,15 +127,17 @@ def plot_pac_maintenance_frequency(frequencies, output_dir):
         frequencies: List of dictionaries containing pac_maintenance_frequency data
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=FIGSIZE)
+    plt.figure(figsize=FIGSIZE, facecolor='white')
     freq_data = [item['pac_maintenance_frequency'] for item in frequencies]
-    sns.violinplot(y=freq_data, color=color)
-    plt.title('PAC Maintenance Frequency Distribution', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
-    plt.ylabel('Percentage (%)', fontsize=FIG_LABEL_FONTSIZE)
-    plt.ylim(bottom=0)  # Ensure no negative values
-    # plt.tight_layout()
+    sns.violinplot(x=freq_data, color=color)
+    # plt.title('PAC Maintenance Frequency Distribution', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
+    plt.xlabel('Maintenance Frequency (%)', fontsize=(FIG_LABEL_FONTSIZE-2))
+    plt.xlim(left=0)  # Ensure no negative values
+    plt.gca().set_facecolor('white')
+    plt.grid(False)
+    plt.tight_layout()
     output_path = output_dir / 'pac_maintenance_frequency.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"PAC Maintenance Frequency plot saved to: {output_path}")
     plt.close()
 
@@ -148,15 +150,17 @@ def plot_pac_maintainer_percentage(percentage_contributors, output_dir):
         percentage_contributors: List of dictionaries containing pac_maintainer_percentage data
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=FIGSIZE)
+    plt.figure(figsize=(4, 3), facecolor='white')
     pct_data = [item['pac_maintainer_percentage'] for item in percentage_contributors]
-    sns.violinplot(y=pct_data, color=color)
+    sns.violinplot(x=pct_data, color=color)
     plt.title('PAC Maintainer Percentage Distribution', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
-    plt.ylabel('Percentage (%)', fontsize=FIG_LABEL_FONTSIZE)
-    plt.ylim(bottom=0)  # Ensure no negative values
+    plt.xlabel('Percentage (%)', fontsize=FIG_LABEL_FONTSIZE)
+    plt.xlim(left=0)  # Ensure no negative values
+    plt.gca().set_facecolor('white')
+    plt.grid(False)
     # plt.tight_layout()
     output_path = output_dir / 'pac_maintainer_percentage.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"PAC Maintainer Percentage plot saved to: {output_path}")
     plt.close()
 
@@ -169,7 +173,7 @@ def plot_median_commit_size(median_changed_lines, output_dir):
         median_changed_lines: List of dictionaries containing pac_commit_median_size and non_pac_commit_median_size
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=FIGSIZE)
+    plt.figure(figsize=FIGSIZE, facecolor='white')
     pac_sizes = []
     non_pac_sizes = []
     for item in median_changed_lines:
@@ -182,16 +186,18 @@ def plot_median_commit_size(median_changed_lines, output_dir):
         'Commit Type': ['PAC'] * len(pac_sizes) + ['Non-PAC'] * len(non_pac_sizes)
     })
     
-    sns.violinplot(data=df_sizes, x='Commit Type', y='Median Lines Changed',
+    sns.violinplot(data=df_sizes, y='Commit Type', x='Median Lines Changed',
                    palette=palette)
     plt.title('Median Commit Size Distribution', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
-    plt.ylabel('Median Lines Changed', fontsize=FIG_LABEL_FONTSIZE)
-    plt.yscale('log')
-    plt.yticks([1, 10, 100, 1000, 10000, 100000])
-    plt.ylim(bottom=0.1)  # Ensure no negative values, use 0.1 for log scale
+    plt.xlabel('Median Lines Changed', fontsize=FIG_LABEL_FONTSIZE)
+    plt.xscale('log')
+    plt.xticks([1, 10, 100, 1000, 10000, 100000])
+    plt.xlim(left=0.1)  # Ensure no negative values, use 0.1 for log scale
+    plt.gca().set_facecolor('white')
+    plt.grid(False)
     # plt.tight_layout()
     output_path = output_dir / 'median_commit_size.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"Median Commit Size plot saved to: {output_path}")
     plt.close()
 
@@ -209,7 +215,7 @@ def plot_pac_vs_nonpac_code_changes(pac_only_changes, output_dir):
                          and non_pac_only_median_changes
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=FIGSIZE)
+    plt.figure(figsize=(4, 3), facecolor='white')
     pac_code_changes = []
     non_pac_code_changes_in_pac = []
     non_pac_code_changes_only = []
@@ -236,24 +242,25 @@ def plot_pac_vs_nonpac_code_changes(pac_only_changes, output_dir):
         'Code Type': all_types
     })
     
-    # Define order for x-axis
-    order = ['PAC Code\n(in PAC commits)', 
+    # Define order for y-axis (reversed for horizontal plot)
+    order = ['Non-PAC Code\n(in non-PAC commits)',
              'Non-PAC Code\n(in PAC commits)', 
-             'Non-PAC Code\n(in non-PAC commits)']
+             'PAC Code\n(in PAC commits)']
     
-    sns.violinplot(data=df_code_changes, x='Code Type', y='Median Lines Changed',
+    sns.violinplot(data=df_code_changes, y='Code Type', x='Median Lines Changed',
                    order=order,
-                   palette=palette)
+                   palette=palette[::-1])  # Reverse palette to match order
     plt.title('Code Changes Distribution by Type and Commit Context', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
-    plt.ylabel('Median Lines Changed', fontsize=FIG_LABEL_FONTSIZE)
-    # plt.xlabel('Code Type and Context', fontsize=FIG_LABEL_FONTSIZE)
-    plt.yscale('log')
-    plt.yticks([1, 10, 100, 1000, 10000])
-    plt.ylim(bottom=0.1)  # Ensure no negative values, use 0.1 for log scale
-    # plt.xticks(rotation=0, ha='right')  # Rotate labels for better readability
+    plt.xlabel('Median Lines Changed', fontsize=FIG_LABEL_FONTSIZE)
+    # plt.ylabel('Code Type and Context', fontsize=FIG_LABEL_FONTSIZE)
+    plt.xscale('log')
+    plt.xticks([1, 10, 100, 1000, 10000])
+    plt.xlim(left=0.1)  # Ensure no negative values, use 0.1 for log scale
+    plt.gca().set_facecolor('white')
+    plt.grid(False)
     # plt.tight_layout()
     output_path = output_dir / 'pac_vs_nonpac_code_changes.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"PAC vs Non-PAC Code Changes plot saved to: {output_path}")
     plt.close()
 
