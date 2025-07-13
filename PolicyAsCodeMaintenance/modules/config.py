@@ -19,3 +19,8 @@ REPOSITORIES_THAT_SHOULD_USE_HEAD = ["litmuschaos/chaos-charts", "Azure/AzureDef
 # Default settings
 DEFAULT_REPOS_CSV = REPOS_CSV_PATH
 USE_TEST_MODE = False  # Set to True to use test dataset with single repository
+
+
+FIG_LABEL_FONTSIZE = 18
+FIG_TITLE_FONTSIZE = 18
+FIGSIZE = (10, 6)

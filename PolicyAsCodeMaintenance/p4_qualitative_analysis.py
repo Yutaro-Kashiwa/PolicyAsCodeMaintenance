@@ -284,4 +284,4 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         # https://www.calculator.net/sample-size-calculator.html?type=1&cl=95&ci=5&pp=50&ps=8815&x=Calculate
-        sys.exit(main(sample_size=369))
+        sys.exit(main(sample_size=362))
