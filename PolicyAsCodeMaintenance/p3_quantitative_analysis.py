@@ -210,26 +210,47 @@ def plot_pac_vs_nonpac_code_changes(pac_only_changes: List[Dict[str, Any]], outp
                                    for item in pac_only_changes 
                                    if item['non_pac_code_median_changes'] > 0]
     
-    non_pac_code_changes_only = [item.get('non_pac_only_median_changes', 0) 
+    non_pac_code_changes_only = [item.get('non_pac_only_median_changes', 0)
                                 for item in pac_only_changes 
                                 if item.get('non_pac_only_median_changes', 0) > 0]
     
     # Create DataFrame for comparison
-    df_code_changes = _create_code_changes_dataframe(
-        pac_code_changes, non_pac_code_changes_in_pac, non_pac_code_changes_only
-    )
-    
-    # Define order for y-axis
-    order = ['Non-PAC Code\n(in non-PAC commits)',
-             'Non-PAC Code\n(in PAC commits)', 
-             'PAC Code\n(in PAC commits)']
-    
-    sns.violinplot(data=df_code_changes, y='Code Type', x='Median Lines Changed', order=order)
-    plt.title('Code Changes Distribution by Type and Commit Context', 
-              fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
-    plt.xlabel('Median Lines Changed', fontsize=FIG_LABEL_FONTSIZE)
-    plt.xlim(left=0.1)
+    # Prepare data for boxplot
+    data = [
+        # non_pac_code_changes_only,
+            non_pac_code_changes_in_pac,
+            pac_code_changes]
+
+    labels = [
+        # 'Non PAC (non PAC commits)',
+              'Non-PaC Files',
+              'PaC Files']
+
+    # Create horizontal boxplot
+    box_plot = plt.boxplot(data,
+                           vert=False,  # Horizontal orientation
+                           labels=labels,
+                           widths=0.6,
+                           patch_artist=True,
+                           showfliers=True,
+                           flierprops=dict(marker='o', markersize=4),
+                           boxprops=dict(facecolor='lightgray', color='darkgray')
+                           )
+
+    # Set x-axis label
+    plt.xlabel('Lines changed', fontsize=FIG_LABEL_FONTSIZE)
+    plt.yticks(fontsize=FIG_LABEL_FONTSIZE)
+
+
+    # Set x-axis limits to start from 0
+    plt.xlim(left=0, right=2000)
     plt.xticks(fontsize=FIG_LABEL_FONTSIZE)
+
+    # Add grid for better readability (optional)
+    # plt.grid(axis='x', alpha=0.3, linestyle='--')
+
+    # Adjust layout
+    plt.tight_layout()
 
     output_path = output_dir / 'pac_vs_nonpac_code_changes.pdf'
     _save_plot(output_path)
@@ -266,8 +287,8 @@ def create_individual_violin_plots(frequencies: List[Dict[str, Any]],
     output_dir = Path(OUTPUTS_DIR).parent / 'individual_plots'
     output_dir.mkdir(exist_ok=True)
     
-    plot_pac_maintenance_frequency(frequencies, output_dir)
-    plot_pac_maintainer_percentage(percentage_contributors, output_dir)
+    #plot_pac_maintenance_frequency(frequencies, output_dir)
+    #plot_pac_maintainer_percentage(percentage_contributors, output_dir)
     plot_pac_vs_nonpac_code_changes(pac_only_changes, output_dir)
     
     print(f"\nAll individual plots saved to: {output_dir}")
