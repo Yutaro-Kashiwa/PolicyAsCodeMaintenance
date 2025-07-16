@@ -72,6 +72,7 @@ def measure_pac_maintenance_frequency(all_data):
                 'pac_commits': pac_commits,
                 'pac_maintenance_frequency': percentage
             })
+            print(repo.get('project_name', repository_name), ":", percentage)
     
     return results
 
