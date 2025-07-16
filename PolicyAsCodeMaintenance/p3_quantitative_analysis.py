@@ -3,23 +3,34 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Any
+import statistics
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
 
-from PolicyAsCodeMaintenance.modules.config import FIG_TITLE_FONTSIZE, FIG_LABEL_FONTSIZE, FIGSIZE
+from PolicyAsCodeMaintenance.modules.config import (
+    FIG_TITLE_FONTSIZE, 
+    FIG_LABEL_FONTSIZE, 
+    FIGSIZE,
+    OUTPUTS_DIR
+)
 from p2_data_validate import find_output_files
-from modules.config import OUTPUTS_DIR
-# plt.rcParams.update({'font.size': FIG_LABEL_FONTSIZE})
-# color='lightblue'
-# color='gray'
-# # palette=['salmon', 'skyblue', 'lightgreen']
-PALETTE=['#E8E8E8', '#808080', '#C0C0C0', '#404040',]
+
+# Visualization settings
+PALETTE = ['#E8E8E8', '#808080', '#C0C0C0', '#404040']
 sns.set_style("whitegrid")
 sns.set_palette("gray")
-def read_outputfiles(output_files):
-    # Read the content of each output file
+def read_outputfiles(output_files: Dict[str, Path]) -> List[Dict[str, Any]]:
+    """Read and parse output files from repositories.
+    
+    Args:
+        output_files: Dictionary mapping repository names to file paths
+        
+    Returns:
+        List of dictionaries containing repository data
+    """
     all_data = []
     for repo_name, file_path in output_files.items():
         try:
@@ -38,12 +49,11 @@ def read_outputfiles(output_files):
     print(f"Successfully read {len(all_data)} output files")
     for item in all_data:
         print(f"- {item['repository']}: {item['file_path']}")
-    pass
     return all_data
 
 
 
-def measure_pac_maintenance_frequency(all_data):
+def measure_pac_maintenance_frequency(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Calculate what percentage of commits modify pac code out of all commits for each repository.
     :param all_data: list of commits from repositories
@@ -79,14 +89,12 @@ def measure_pac_maintenance_frequency(all_data):
     return results
 
 
-def measure_size_of_pac_and_non_pac_commit(all_data):
+def measure_size_of_pac_and_non_pac_commit(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Calculate the median number of changed lines in commits modifying pac code and commits not modifying pac code for each repository.
     :param all_data: list of commits from repositories
     :return: list of the median number for each repository
     """
-    import statistics
-    
     results = []
     
     for item in all_data:
@@ -122,7 +130,21 @@ def measure_size_of_pac_and_non_pac_commit(all_data):
     
     return results
 
-def plot_pac_maintenance_frequency(frequencies, output_dir):
+def _setup_violin_plot(figsize=FIGSIZE):
+    """Common setup for violin plots."""
+    plt.figure(figsize=figsize, facecolor='white')
+    plt.gca().set_facecolor('white')
+    plt.grid(False)
+
+
+def _save_plot(output_path: Path):
+    """Save plot with standard settings."""
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.close()
+
+
+def plot_pac_maintenance_frequency(frequencies: List[Dict[str, Any]], output_dir: Path):
     """
     Create and save PAC Maintenance Frequency violin plot.
     
@@ -130,22 +152,19 @@ def plot_pac_maintenance_frequency(frequencies, output_dir):
         frequencies: List of dictionaries containing pac_maintenance_frequency data
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=FIGSIZE, facecolor='white')
+    _setup_violin_plot()
     freq_data = [item['pac_maintenance_frequency'] for item in frequencies]
     sns.violinplot(x=freq_data, orient='h', color=PALETTE[0], inner='box')
-    # plt.title('PAC Maintenance Frequency Distribution', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
-    plt.xlabel('PaC maintenance frequency (%)', fontsize=(FIG_LABEL_FONTSIZE))
-    plt.xlim(left=0, right=70)  # Ensure no negative values
-    plt.gca().set_facecolor('white')
-    plt.grid(False)
-    plt.tight_layout()
+    plt.xlabel('PaC maintenance frequency (%)', fontsize=FIG_LABEL_FONTSIZE)
+    plt.xlim(left=0, right=70)
+    plt.xticks(fontsize=(FIG_LABEL_FONTSIZE+2))
+
     output_path = output_dir / 'pac_maintenance_frequency.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    _save_plot(output_path)
     print(f"PAC Maintenance Frequency plot saved to: {output_path}")
-    plt.close()
 
 
-def plot_pac_maintainer_percentage(percentage_contributors, output_dir):
+def plot_pac_maintainer_percentage(percentage_contributors: List[Dict[str, Any]], output_dir: Path):
     """
     Create and save PAC Maintainer Percentage violin plot.
     
@@ -153,100 +172,100 @@ def plot_pac_maintainer_percentage(percentage_contributors, output_dir):
         percentage_contributors: List of dictionaries containing pac_maintainer_percentage data
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=FIGSIZE, facecolor='white')
+    _setup_violin_plot()
     pct_data = [item['pac_maintainer_percentage'] for item in percentage_contributors]
     sns.violinplot(x=pct_data, orient='h', color=PALETTE[0])
-    # plt.title('PAC Maintainer Percentage Distribution', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
     plt.xlabel('PaC maintainer share (%)', fontsize=FIG_LABEL_FONTSIZE)
-    plt.xlim(left=0, right=100)  # Ensure no negative values
-    plt.gca().set_facecolor('white')
-    plt.grid(False)
-    # plt.tight_layout()
+    plt.xlim(left=0, right=100)
+    plt.xticks(fontsize=FIG_LABEL_FONTSIZE)
+
     output_path = output_dir / 'pac_maintainer_percentage.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    _save_plot(output_path)
     print(f"PAC Maintainer Percentage plot saved to: {output_path}")
-    plt.close()
 
 
 
-def plot_pac_vs_nonpac_code_changes(pac_only_changes, output_dir):
+def plot_pac_vs_nonpac_code_changes(pac_only_changes: List[Dict[str, Any]], output_dir: Path):
     """
     Create and save PAC vs Non-PAC Code Changes comparison violin plot.
-    Now includes three categories:
+    
+    Includes three categories:
     1. PAC Code (in PAC commits)
     2. Non-PAC Code (in PAC commits)
     3. Non-PAC Code (in non-PAC commits)
     
     Args:
-        pac_only_changes: List of dictionaries containing pac_code_median_changes, non_pac_code_median_changes, 
-                         and non_pac_only_median_changes
+        pac_only_changes: List of dictionaries containing pac_code_median_changes, 
+                         non_pac_code_median_changes, and non_pac_only_median_changes
         output_dir: Path object for output directory
     """
-    plt.figure(figsize=(10, 6), facecolor='white')
-    pac_code_changes = []
-    non_pac_code_changes_in_pac = []
-    non_pac_code_changes_only = []
+    _setup_violin_plot(figsize=(10, 6))
     
-    for item in pac_only_changes:
-        if item['pac_code_median_changes'] > 0:
-            pac_code_changes.append(item['pac_code_median_changes'])
-        if item['non_pac_code_median_changes'] > 0:
-            non_pac_code_changes_in_pac.append(item['non_pac_code_median_changes'])
-        if item.get('non_pac_only_median_changes', 0) > 0:
-            non_pac_code_changes_only.append(item['non_pac_only_median_changes'])
+    # Extract data for each category
+    pac_code_changes = [item['pac_code_median_changes'] 
+                       for item in pac_only_changes 
+                       if item['pac_code_median_changes'] > 0]
     
-    # Create DataFrame for three-way comparison
-    all_changes = (pac_code_changes + 
-                   non_pac_code_changes_in_pac + 
-                   non_pac_code_changes_only)
+    non_pac_code_changes_in_pac = [item['non_pac_code_median_changes'] 
+                                   for item in pac_only_changes 
+                                   if item['non_pac_code_median_changes'] > 0]
     
-    all_types = (['PAC Code\n(in PAC commits)'] * len(pac_code_changes) + 
-                 ['Non-PAC Code\n(in PAC commits)'] * len(non_pac_code_changes_in_pac) + 
-                 ['Non-PAC Code\n(in non-PAC commits)'] * len(non_pac_code_changes_only))
+    non_pac_code_changes_only = [item.get('non_pac_only_median_changes', 0) 
+                                for item in pac_only_changes 
+                                if item.get('non_pac_only_median_changes', 0) > 0]
     
-    df_code_changes = pd.DataFrame({
-        'Median Lines Changed': all_changes,
-        'Code Type': all_types
-    })
+    # Create DataFrame for comparison
+    df_code_changes = _create_code_changes_dataframe(
+        pac_code_changes, non_pac_code_changes_in_pac, non_pac_code_changes_only
+    )
     
-    # Define order for y-axis (reversed for horizontal plot)
+    # Define order for y-axis
     order = ['Non-PAC Code\n(in non-PAC commits)',
              'Non-PAC Code\n(in PAC commits)', 
              'PAC Code\n(in PAC commits)']
     
-    sns.violinplot(data=df_code_changes, y='Code Type', x='Median Lines Changed',
-                   order=order)  # Reverse palette to match order
-    plt.title('Code Changes Distribution by Type and Commit Context', fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
+    sns.violinplot(data=df_code_changes, y='Code Type', x='Median Lines Changed', order=order)
+    plt.title('Code Changes Distribution by Type and Commit Context', 
+              fontsize=FIG_TITLE_FONTSIZE, fontweight='bold')
     plt.xlabel('Median Lines Changed', fontsize=FIG_LABEL_FONTSIZE)
-    # plt.ylabel('Code Type and Context', fontsize=FIG_LABEL_FONTSIZE)
-    plt.xlim(left=0.1)  # Ensure no negative values, use 0.1 for log scale
-    plt.gca().set_facecolor('white')
-    plt.grid(False)
-    # plt.tight_layout()
+    plt.xlim(left=0.1)
+    plt.xticks(fontsize=FIG_LABEL_FONTSIZE)
+
     output_path = output_dir / 'pac_vs_nonpac_code_changes.pdf'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    _save_plot(output_path)
     print(f"PAC vs Non-PAC Code Changes plot saved to: {output_path}")
-    plt.close()
 
 
-def create_individual_violin_plots(frequencies, percentage_contributors, median_changed_lines, pac_only_changes):
+def _create_code_changes_dataframe(pac_changes: List[float], 
+                                  non_pac_in_pac: List[float], 
+                                  non_pac_only: List[float]) -> pd.DataFrame:
+    """Create DataFrame for code changes visualization."""
+    all_changes = pac_changes + non_pac_in_pac + non_pac_only
+    
+    all_types = (['PAC Code\n(in PAC commits)'] * len(pac_changes) + 
+                 ['Non-PAC Code\n(in PAC commits)'] * len(non_pac_in_pac) + 
+                 ['Non-PAC Code\n(in non-PAC commits)'] * len(non_pac_only))
+    
+    return pd.DataFrame({
+        'Median Lines Changed': all_changes,
+        'Code Type': all_types
+    })
+
+
+def create_individual_violin_plots(frequencies: List[Dict[str, Any]], 
+                                 percentage_contributors: List[Dict[str, Any]], 
+                                 pac_only_changes: List[Dict[str, Any]]) -> None:
     """
-    Create individual violin plots for the four metrics and save them separately.
+    Create individual violin plots for the metrics and save them separately.
     
     Args:
         frequencies: Data for PAC maintenance frequency
         percentage_contributors: Data for PAC maintainer percentage
-        median_changed_lines: Data for median commit sizes
         pac_only_changes: Data for PAC vs non-PAC code changes
     """
-    # Set the style
-    sns.set_style("whitegrid")
-    
-    # Create output directory for individual plots
     output_dir = Path(OUTPUTS_DIR).parent / 'individual_plots'
     output_dir.mkdir(exist_ok=True)
     
-    # Create each plot
     plot_pac_maintenance_frequency(frequencies, output_dir)
     plot_pac_maintainer_percentage(percentage_contributors, output_dir)
     plot_pac_vs_nonpac_code_changes(pac_only_changes, output_dir)
@@ -255,7 +274,7 @@ def create_individual_violin_plots(frequencies, percentage_contributors, median_
 
 
 
-def measure_percentage_pac_maintainer(all_data):
+def measure_percentage_pac_maintainer(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Calculate what percentage of commit authors change pac code out of all the commit authors for each repository.
     :param all_data: list of commits from repositories
@@ -295,7 +314,7 @@ def measure_percentage_pac_maintainer(all_data):
     return results
 
 
-def measure_pac_and_non_pac_code_changes(all_data):
+def measure_pac_and_non_pac_code_changes(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Calculate the median number of changed lines in PAC code and non-PAC code separately.
     This function counts lines changed in PAC files vs non-PAC files within commits that modify PAC code,
@@ -303,8 +322,6 @@ def measure_pac_and_non_pac_code_changes(all_data):
     :param all_data: list of commits from repositories
     :return: list of the median number of PAC-specific and non-PAC-specific changed lines for each repository
     """
-    import statistics
-    
     results = []
     
     for item in all_data:
@@ -367,48 +384,63 @@ def measure_pac_and_non_pac_code_changes(all_data):
     return results
 
 
+def _display_results(frequencies: List[Dict[str, Any]], 
+                    percentage_contributors: List[Dict[str, Any]],
+                    median_changed_lines: List[Dict[str, Any]],
+                    pac_and_non_pac_changes: List[Dict[str, Any]]) -> None:
+    """Display analysis results in a formatted way."""
+    print("\n=== PAC Maintenance Frequency ===")
+    print(f"  Median freq: {np.median([freq['pac_maintenance_frequency'] for freq in frequencies]):.2f}%")
+    print(f"    Median pac_commits: {np.median([freq['pac_commits'] for freq in frequencies]):.0f}")
+    print(f"    Median total_commits: {np.median([freq['total_commits'] for freq in frequencies]):.0f}")
+
+    print("\n=== PAC Maintainer Percentage ===")
+    print(f"  Median pac_maintainer_percentage: {np.median([per['pac_maintainer_percentage'] for per in percentage_contributors]):.2f}%")
+    print(f"    Median pac_authors: {np.median([per['pac_authors'] for per in percentage_contributors]):.0f}")
+    print(f"    Median total_authors: {np.median([per['total_authors'] for per in percentage_contributors]):.0f}")
+
+    print("\n=== Median Commit Sizes ===")
+    print(f"  Median (PAC commits): {np.median([lines['pac_commit_median_size'] for lines in median_changed_lines]):.0f}")
+    print(f"  Median (non-PAC commits): {np.median([lines['non_pac_commit_median_size'] for lines in median_changed_lines]):.0f}")
+
+    print("\n=== PAC vs Non-PAC Code Changes ===")
+    pac_code_medians = [changes['pac_code_median_changes'] for changes in pac_and_non_pac_changes]
+    non_pac_in_pac = [changes['non_pac_code_median_changes'] for changes in pac_and_non_pac_changes if changes['non_pac_code_median_changes'] > 0]
+    non_pac_only = [changes['non_pac_only_median_changes'] for changes in pac_and_non_pac_changes if changes.get('non_pac_only_median_changes', 0) > 0]
+    
+    print(f"  Median PAC code changes (in PAC commits): {np.median(pac_code_medians):.0f}")
+    print(f"  Median non-PAC code changes (in PAC commits): {np.median(non_pac_in_pac):.0f}")
+    print(f"  Median non-PAC code changes (in non-PAC commits): {np.median(non_pac_only):.0f}")
+    print(f"  Total repos with PAC changes: {len([c for c in pac_and_non_pac_changes if c['pac_commits_with_changes'] > 0])}")
+    print(f"  Total repos with non-PAC only commits: {len([c for c in pac_and_non_pac_changes if c.get('non_pac_only_commits_count', 0) > 0])}")
+
+
 def main() -> int:
-    """Main function to orchestrate the aggregation process."""
+    """Main function to orchestrate the quantitative analysis."""
     try:
-        output_files = find_output_files(OUTPUTS_DIR)
+        # Setup logging
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         
+        # Find and read output files
+        output_files = find_output_files(OUTPUTS_DIR)
         data = read_outputfiles(output_files)
         
+        # Perform analyses
         frequencies = measure_pac_maintenance_frequency(data)
         percentage_contributors = measure_percentage_pac_maintainer(data)
         median_changed_lines = measure_size_of_pac_and_non_pac_commit(data)
         pac_and_non_pac_changes = measure_pac_and_non_pac_code_changes(data)
         
         # Display results
-        print("\n=== PAC Maintenance Frequency ===")
-        print("  Median freq: ", np.median([freq['pac_maintenance_frequency'] for freq in frequencies]))
-        print("    Median pac_commits: ", np.median([freq['pac_commits'] for freq in frequencies]))
-        print("    Median total_commits: ", np.median([freq['total_commits'] for freq in frequencies]))
+        _display_results(frequencies, percentage_contributors, median_changed_lines, pac_and_non_pac_changes)
 
-        print("\n=== PAC Maintainer Percentage ===")
-        print("  Median pac_maintainer_percentage: ", np.median([per['pac_maintainer_percentage'] for per in percentage_contributors]))
-        print("    Median pac_authors: ", np.median([per['pac_authors'] for per in percentage_contributors]))
-        print("    Median total_authors: ", np.median([per['total_authors'] for per in percentage_contributors]))
-
-        
-        print("\n=== Median Commit Sizes ===")
-        print("  Median (PAC commits): ", np.median([lines['pac_commit_median_size'] for lines in median_changed_lines]))
-        print("  Median (non-PAC commits): ", np.median([lines['non_pac_commit_median_size'] for lines in median_changed_lines]))
-
-        print("\n=== PAC vs Non-PAC Code Changes ===")
-        print("  Median PAC code changes (in PAC commits): ", np.median([changes['pac_code_median_changes'] for changes in pac_and_non_pac_changes]))
-        print("  Median non-PAC code changes (in PAC commits): ", np.median([changes['non_pac_code_median_changes'] for changes in pac_and_non_pac_changes if changes['non_pac_code_median_changes'] > 0]))
-        print("  Median non-PAC code changes (in non-PAC commits): ", np.median([changes['non_pac_only_median_changes'] for changes in pac_and_non_pac_changes if changes.get('non_pac_only_median_changes', 0) > 0]))
-        print("  Total repos with PAC changes: ", len([c for c in pac_and_non_pac_changes if c['pac_commits_with_changes'] > 0]))
-        print("  Total repos with non-PAC only commits: ", len([c for c in pac_and_non_pac_changes if c.get('non_pac_only_commits_count', 0) > 0]))
-
-        # Create individual violin plots (one plot per file)
-        create_individual_violin_plots(frequencies, percentage_contributors, median_changed_lines, pac_and_non_pac_changes)
+        # Create visualizations
+        create_individual_violin_plots(frequencies, percentage_contributors, pac_and_non_pac_changes)
 
         return 0
         
     except Exception as e:
-
+        logging.error(f"Error in main: {e}")
         return 1
 
 
