@@ -16,7 +16,7 @@ from PolicyAsCodeMaintenance.modules.config import (
     FIGSIZE,
     OUTPUTS_DIR
 )
-from p2_data_validate import find_output_files
+from PolicyAsCodeMaintenance.p2_data_validate import find_output_files
 
 # Visualization settings
 PALETTE = ['#E8E8E8', '#808080', '#C0C0C0', '#404040']
@@ -52,10 +52,40 @@ def read_outputfiles(output_files: Dict[str, Path]) -> List[Dict[str, Any]]:
     return all_data
 
 
+def find_first_pac_commit_index(commits: List[Dict[str, Any]]) -> int:
+    """Find the index of the first commit that has PaC changes.
+    
+    Note: This function expects commits to be already sorted by date.
+    
+    Args:
+        commits: List of commit dictionaries (should be pre-sorted by date)
+        
+    Returns:
+        Index of first PaC commit, or -1 if no PaC commits found
+    """
+    for i, commit in enumerate(commits):
+        if commit.get('has_pac_changes', False):
+            return i
+    return -1
+
+
+def sort_commits_by_date(commits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Sort commits by date in ascending order (oldest first).
+    
+    Args:
+        commits: List of commit dictionaries
+        
+    Returns:
+        List of commits sorted by date
+    """
+    return sorted(commits, key=lambda x: x.get('date', 0))
+
+
 
 def measure_pac_maintenance_frequency(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Calculate what percentage of commits modify pac code out of all commits for each repository.
+    Calculate what percentage of commits modify pac code out of all commits for each repository,
+    counting only commits after the first PaC code is introduced.
     :param all_data: list of commits from repositories
     :return: list of the percentages for each repository
     """
@@ -67,22 +97,39 @@ def measure_pac_maintenance_frequency(all_data: List[Dict[str, Any]]) -> List[Di
         
         # Extract repository data
         for repo in data.get('repositories', []):
-            total_commits = len(repo.get('commits', []))
-            if total_commits == 0:
+            commits = repo.get('commits', [])
+            if not commits:
+                continue
+            
+            # Sort commits by date first
+            sorted_commits = sort_commits_by_date(commits)
+            
+            # Find first PaC commit
+            first_pac_index = find_first_pac_commit_index(sorted_commits)
+            if first_pac_index == -1:
+                # No PaC commits found
+                continue
+                
+            # Only consider commits after first PaC introduction (from sorted list)
+            commits_after_pac = sorted_commits[first_pac_index:]
+            total_commits_after_pac = len(commits_after_pac)
+            
+            if total_commits_after_pac == 0:
                 continue
                 
             # Count commits that have PAC changes
-            pac_commits = sum(1 for commit in repo.get('commits', []) 
+            pac_commits = sum(1 for commit in commits_after_pac 
                             if commit.get('has_pac_changes', False))
             
             # Calculate percentage
-            percentage = (pac_commits / total_commits) * 100 if total_commits > 0 else 0
+            percentage = (pac_commits / total_commits_after_pac) * 100 if total_commits_after_pac > 0 else 0
             
             results.append({
                 'repository': repo.get('project_name', repository_name),
-                'total_commits': total_commits,
+                'total_commits': total_commits_after_pac,
                 'pac_commits': pac_commits,
-                'pac_maintenance_frequency': percentage
+                'pac_maintenance_frequency': percentage,
+                'first_pac_commit_index': first_pac_index
             })
             print(repo.get('project_name', repository_name), ",", percentage)
     
@@ -91,7 +138,8 @@ def measure_pac_maintenance_frequency(all_data: List[Dict[str, Any]]) -> List[Di
 
 def measure_size_of_pac_and_non_pac_commit(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Calculate the median number of changed lines in commits modifying pac code and commits not modifying pac code for each repository.
+    Calculate the median number of changed lines in commits modifying pac code and commits not modifying pac code for each repository,
+    counting only commits after the first PaC code is introduced.
     :param all_data: list of commits from repositories
     :return: list of the median number for each repository
     """
@@ -103,11 +151,27 @@ def measure_size_of_pac_and_non_pac_commit(all_data: List[Dict[str, Any]]) -> Li
         
         # Extract repository data
         for repo in data.get('repositories', []):
+            commits = repo.get('commits', [])
+            if not commits:
+                continue
+            
+            # Sort commits by date first
+            sorted_commits = sort_commits_by_date(commits)
+            
+            # Find first PaC commit
+            first_pac_index = find_first_pac_commit_index(sorted_commits)
+            if first_pac_index == -1:
+                # No PaC commits found
+                continue
+                
+            # Only consider commits after first PaC introduction (from sorted list)
+            commits_after_pac = sorted_commits[first_pac_index:]
+            
             pac_commit_sizes = []
             non_pac_commit_sizes = []
             
             # Collect commit sizes
-            for commit in repo.get('commits', []):
+            for commit in commits_after_pac:
                 total_changes = (commit.get('total_added_lines', 0) + 
                                commit.get('total_deleted_lines', 0))
                 
@@ -199,7 +263,7 @@ def plot_pac_vs_nonpac_code_changes(pac_only_changes: List[Dict[str, Any]], outp
                          non_pac_code_median_changes, and non_pac_only_median_changes
         output_dir: Path object for output directory
     """
-    _setup_violin_plot(figsize=(10, 6))
+    _setup_violin_plot(figsize=(10, 4))
     
     # Extract data for each category
     pac_code_changes = [item['pac_code_median_changes'] 
@@ -241,9 +305,10 @@ def plot_pac_vs_nonpac_code_changes(pac_only_changes: List[Dict[str, Any]], outp
     plt.xlabel('Lines changed', fontsize=FIG_LABEL_FONTSIZE)
     plt.yticks(fontsize=FIG_LABEL_FONTSIZE)
 
+    plt.xscale('log')
 
     # Set x-axis limits to start from 0
-    plt.xlim(left=0, right=2000)
+    plt.xlim(left=0, right=100000)
     plt.xticks(fontsize=FIG_LABEL_FONTSIZE)
 
     # Add grid for better readability (optional)
@@ -287,8 +352,8 @@ def create_individual_violin_plots(frequencies: List[Dict[str, Any]],
     output_dir = Path(OUTPUTS_DIR).parent / 'individual_plots'
     output_dir.mkdir(exist_ok=True)
     
-    #plot_pac_maintenance_frequency(frequencies, output_dir)
-    #plot_pac_maintainer_percentage(percentage_contributors, output_dir)
+    plot_pac_maintenance_frequency(frequencies, output_dir)
+    plot_pac_maintainer_percentage(percentage_contributors, output_dir)
     plot_pac_vs_nonpac_code_changes(pac_only_changes, output_dir)
     
     print(f"\nAll individual plots saved to: {output_dir}")
@@ -297,7 +362,8 @@ def create_individual_violin_plots(frequencies: List[Dict[str, Any]],
 
 def measure_percentage_pac_maintainer(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Calculate what percentage of commit authors change pac code out of all the commit authors for each repository.
+    Calculate what percentage of commit authors change pac code out of all the commit authors for each repository,
+    counting only commits after the first PaC code is introduced.
     :param all_data: list of commits from repositories
     :return: list of the percentage for each repository
     """
@@ -309,11 +375,27 @@ def measure_percentage_pac_maintainer(all_data: List[Dict[str, Any]]) -> List[Di
         
         # Extract repository data
         for repo in data.get('repositories', []):
+            commits = repo.get('commits', [])
+            if not commits:
+                continue
+            
+            # Sort commits by date first
+            sorted_commits = sort_commits_by_date(commits)
+            
+            # Find first PaC commit
+            first_pac_index = find_first_pac_commit_index(sorted_commits)
+            if first_pac_index == -1:
+                # No PaC commits found
+                continue
+                
+            # Only consider commits after first PaC introduction (from sorted list)
+            commits_after_pac = sorted_commits[first_pac_index:]
+            
             all_authors = set()
             pac_authors = set()
             
             # Collect unique authors
-            for commit in repo.get('commits', []):
+            for commit in commits_after_pac:
                 author = commit.get('author', '')
                 if author:
                     all_authors.add(author)
@@ -337,7 +419,8 @@ def measure_percentage_pac_maintainer(all_data: List[Dict[str, Any]]) -> List[Di
 
 def measure_pac_and_non_pac_code_changes(all_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Calculate the median number of changed lines in PAC code and non-PAC code separately.
+    Calculate the median number of changed lines in PAC code and non-PAC code separately,
+    counting only commits after the first PaC code is introduced.
     This function counts lines changed in PAC files vs non-PAC files within commits that modify PAC code,
     and also tracks non-PAC changes in commits that don't modify PAC code.
     :param all_data: list of commits from repositories
@@ -351,12 +434,28 @@ def measure_pac_and_non_pac_code_changes(all_data: List[Dict[str, Any]]) -> List
         
         # Extract repository data
         for repo in data.get('repositories', []):
+            commits = repo.get('commits', [])
+            if not commits:
+                continue
+            
+            # Sort commits by date first
+            sorted_commits = sort_commits_by_date(commits)
+            
+            # Find first PaC commit
+            first_pac_index = find_first_pac_commit_index(sorted_commits)
+            if first_pac_index == -1:
+                # No PaC commits found
+                continue
+                
+            # Only consider commits after first PaC introduction (from sorted list)
+            commits_after_pac = sorted_commits[first_pac_index:]
+            
             pac_only_changes = []
             non_pac_only_changes_in_pac_commits = []
             non_pac_only_changes_in_non_pac_commits = []
             
             # Collect PAC-specific and non-PAC-specific line changes
-            for commit in repo.get('commits', []):
+            for commit in commits_after_pac:
                 total_added = commit.get('total_added_lines', 0)
                 total_deleted = commit.get('total_deleted_lines', 0)
                 total_changes = total_added + total_deleted
